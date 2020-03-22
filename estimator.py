@@ -112,7 +112,7 @@ class ConvNet(nn.Module):
         #print('view(-1, 32 * 4 * 11): ', x.size())
         x = self.fc1(x)
         #print('fc1: ', x.size())
-        x = torch.sigmoid(x)  # -> n, 500
+        x = F.elu(x)  # -> n, 500
         #print('sigmoid: ', x.size())
         x = self.fc2(x)
         #print('fc2: ', x.size())
@@ -132,8 +132,10 @@ transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5
 train_dataset = HandPoseDataset(csv_file='test/All_poses.csv', root_dir='test/', transform=transform)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle=False, num_workers=5)
 criterion = nn.MSELoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-num_epochs = 2
+#optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+#num_epochs = 10
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+num_epochs = 100
 n_total_steps = len(train_loader)
 for epoch in range(num_epochs):
     for i, (images, y) in enumerate(train_loader):
