@@ -16,7 +16,7 @@ from PIL import Image
 from scipy.spatial.transform import Rotation as R
 import csv
 
-csvfile = open('test/result.csv', 'w')
+csvfile = open('test/result_simple.csv', 'w')
 csvwriter = csv.writer(csvfile)
 
 # Device configuration
@@ -87,15 +87,14 @@ class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 6, 11)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 11)
-        self.conv3 = nn.Conv2d(16, 32, 5)
-        self.conv4 = nn.Conv2d(32, 32, 3)
+        self.pool1 = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 12, 11)
         self.pool2 = nn.MaxPool2d(5, 5)
-        self.fc1 = nn.Linear(32 * 7 * 11, 500)
-        self.fc2 = nn.Linear(500, 250)
-        self.fc3 = nn.Linear(250, 100)
-        self.fc4 = nn.Linear(100, 50)
+
+        self.fc1 = nn.Linear(12 * 45 * 61, 1500)
+        self.fc2 = nn.Linear(1500, 500)
+        self.fc3 = nn.Linear(500, 200)
+        self.fc4 = nn.Linear(200, 50)
         self.fc5 = nn.Linear(50, 20)
         self.fc6 = nn.Linear(20, 6)
 
@@ -106,35 +105,35 @@ class ConvNet(nn.Module):
         #print('conv1: ', x.size())
         x = F.elu(x)
         #print('elu: ', x.size())
-        x = self.pool(x)            # pool - > 6,235,315
+        x = self.pool1(x)            # pool - > 6,235,315
         #print('pool: ', x.size())
-        x = self.conv2(x)           # conv -> 16, 225, 305
+        x = self.conv2(x)           # conv -> 12, 225, 305
         #print('conv2: ', x.size())
         x = F.elu(x)
         #print('elu: ', x.size())
-        x = self.pool2(x)           # pool -> 16, 45, 61
+        x = self.pool2(x)           # pool -> 12, 45, 61
         #print('pool2: ', x.size())
-        x = self.conv3(x)           # 32, 41, 57
-        #print('conv3: ', x.size())
-        x = self.conv4(x)           # 32, 39, 55
-        #print('conv4: ', x.size())
-        x = self.pool2(x)            # 32, 7, 11
-        #print('pool2: ', x.size())
-        x = x.view(-1, 32 * 7 * 11)  # 2464
+
+        x = x.view(-1, 12 * 45 * 61)  # 32940
         #print('view(-1, 32 * 4 * 11): ', x.size())
         x = self.fc1(x)
         #print('fc1: ', x.size())
-        x = F.elu(x)  # -> n, 500
+        x = F.elu(x)  # -> n, 1500
         #print('sigmoid: ', x.size())
         x = self.fc2(x)
+        x = F.elu(x)
         #print('fc2: ', x.size())
         x = self.fc3(x)
+        x = F.elu(x)
         #print('fc3: ', x.size())
         x = self.fc4(x)
+        x = F.elu(x)
         #print('fc4: ', x.size())
         x = self.fc5(x)
+        x = F.elu(x)
         #print('fc5: ', x.size())
         x = self.fc6(x)
+        x = F.elu(x)
         #print('fc6: ', x.size())
         return x
 
@@ -145,8 +144,8 @@ transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5
 train_dataset = HandPoseDataset(csv_file='test/demo1.csv', root_dir='test/', transform=transform)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=30, shuffle=False, num_workers=5)
 criterion = nn.MSELoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-num_epochs = 20
+optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+num_epochs = 200
 #optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 #num_epochs = 100
 n_total_steps = len(train_loader)
@@ -185,8 +184,8 @@ for epoch in range(num_epochs):
     tb.add_scalar('Loss', loss_value, epoch)
     tb.add_histogram('conv1.bias', model.conv1.bias, epoch)
     tb.add_histogram('conv1.weight', model.conv1.weight, epoch)
-    tb.add_histogram('conv4.bias', model.conv4.bias, epoch)
-    tb.add_histogram('conv4.weight', model.conv4.weight, epoch)
+    tb.add_histogram('conv2.bias', model.conv2.bias, epoch)
+    tb.add_histogram('conv2.weight', model.conv2.weight, epoch)
 '''
 print('-------------------Model Performance Sample ----------------')
 inputs, ys = next(iter(train_loader))
